@@ -18,10 +18,10 @@ df["minimum_nights"] = df["minimum_nights"].astype(int)
 df["id"] = df["id"].astype(int)
 df["name"] = df["name"].astype(str)
 df["room_type"] = df["room_type"].astype(str)
-df["availability_365"] = df["availability_365"].astype(str)
+df["availability_365"] = df["availability_365"].astype(int)
 df["neighbourhood"] = df["neighbourhood"].astype(str)
-df["latitude"] = df["latitude"].astype(str)
-df["longitude"] = df["longitude"].astype(str)
+df["latitude"] = df["latitude"].astype(float)
+df["longitude"] = df["longitude"].astype(float)
 df["city"] = df["city"].astype(str)
 df["host_name"] = df["host_name"].astype(str)
 df["calculated_host_listings_count"] = df["calculated_host_listings_count"].astype(int)
@@ -72,5 +72,4 @@ with ThreadPoolExecutor(max_workers=4) as executor:
 
 end_time = time.time()
 
-print("All data inserted successfully.")
-print(f"Execution time: {end_time - start_time:.4f} seconds")
+print(f"Execution time: {end_time - start_time:.4f} seconds") # 31.0748 seconds
