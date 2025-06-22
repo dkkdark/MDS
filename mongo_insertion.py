@@ -69,7 +69,22 @@ with ThreadPoolExecutor(max_workers=4) as executor:
     for i in range(0, len(documents), batch_size):
         batch = documents[i:i + batch_size]
         executor.submit(insert_batch, batch)
+        #insert_batch(batch)
 
 end_time = time.time()
 
-print(f"Execution time: {end_time - start_time:.4f} seconds") # 31.0748 seconds
+print(f"Execution time: {end_time - start_time:.4f} seconds")
+
+# Without ThreadPoolExecutor
+# 57.0663 seconds
+# 72.9919 seconds
+# 62.2715 seconds
+# 69.5375 seconds
+# 69.1218 seconds
+
+# With ThreadPoolExecutor
+# 31.0748 seconds
+# 20.2824 seconds
+# 18.4244 seconds
+# 16.3555 seconds
+# 20.3480 seconds

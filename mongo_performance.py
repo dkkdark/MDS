@@ -10,6 +10,15 @@ client = MongoClient(os.getenv("MONGO_SERVER"))
 db = client["US_Airbnb"]          
 collection = db["accommodation"]  
 
+collection.create_index("location.neighbourhood")
+collection.create_index("review.number_of_reviews")
+collection.create_index("room_type")
+collection.create_index("availability_365")
+collection.create_index("host.host_name")
+collection.create_index([("location.neighbourhood", 1), ("review.number_of_reviews", -1)])
+collection.create_index([("location.neighbourhood", 1), ("room_type", 1)])
+
+
 # 1. Most Popular Neighborhoods in the US
 def get_most_popular_neighborhoods(limit=10):
     start = time.time()
@@ -58,7 +67,7 @@ def get_highest_reviewed_listing(neighborhood):
 def get_lowest_reviewed_listing(neighborhood):
     start = time.time()
     result = list(collection.find(
-        {"location.neighbourhood": neighborhood}
+        {"location.neighbourhood": neighborhood},
     ).sort("review.number_of_reviews", 1).limit(1))
     end = time.time()
     print(f"get_lowest_reviewed_listing executed in {end - start:.4f} seconds")
@@ -83,29 +92,28 @@ def get_most_active_host():
             }
         },
         {"$sort": {"listings_count": -1}},
-        {"$limit": 1}
+        {"$limit": 5}
     ]))
     end = time.time()
     print(f"get_most_active_host executed in {end - start:.4f} seconds")
     return result
 
-# Example usage
 if __name__ == "__main__":
     print("Most Popular Neighborhoods:")
-    print(get_most_popular_neighborhoods())
+    get_most_popular_neighborhoods()
 
     print("\nMost Booked Room Type in 'Western Addition':")
-    print(get_most_booked_room_type("Western Addition"))
+    get_most_booked_room_type("Western Addition")
 
     print("\nHighest Reviewed Listing in 'Western Addition':")
-    print(get_highest_reviewed_listing("Western Addition"))
+    get_highest_reviewed_listing("Western Addition")
 
     print("\nLowest Reviewed Listing in 'Western Addition':")
-    print(get_lowest_reviewed_listing("Western Addition"))
+    get_lowest_reviewed_listing("Western Addition")
 
     print("\nAvailable Accommodations (top 3 shown):")
-    print(get_available_accommodations()[:3])
+    get_available_accommodations()[:3]
 
     print("\nMost Active Host:")
-    print(get_most_active_host())
+    get_most_active_host()
 
