@@ -107,10 +107,10 @@ def get_most_active_host():
 # Sample execution
 if __name__ == "__main__":
     print("\n🔹 a. Most Popular Neighbourhoods (Grouped by Min Nights, Price > 300):")
-    print(get_popular_neighbourhoods_grouped_by_min_nights()[:5])
+    print(get_popular_neighbourhoods_grouped_by_min_nights()[:1])
 
     print("\n🔹 b. Most Booked Room Type:")
-    print(get_most_booked_room_type()[:5])
+    print(get_most_booked_room_type()[:1])
 
     print("\n🔹 c. Highest Reviewed Listing:")
     print(get_highest_reviewed_listing())
@@ -119,7 +119,7 @@ if __name__ == "__main__":
     print(get_lowest_reviewed_listing())
 
     print("\n🔹 d. Available Accommodations (Top 3):")
-    print(get_available_accommodations()[:3])
+    print(get_available_accommodations()[:1])
 
     print("\n🔹 e. Most Active Host:")
-    print(get_most_active_host()[:5])
+    print(get_most_active_host()[:1])

@@ -65,11 +65,10 @@ def insert_batch(batch):
 
 start_time = time.time()
 
-with ThreadPoolExecutor(max_workers=4) as executor:
-    for i in range(0, len(documents), batch_size):
-        batch = documents[i:i + batch_size]
-        executor.submit(insert_batch, batch)
-        #insert_batch(batch)
+for i in range(0, len(documents), batch_size):
+    batch = documents[i:i + batch_size]
+    #executor.submit(insert_batch, batch)
+    insert_batch(batch)
 
 end_time = time.time()
 
