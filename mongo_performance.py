@@ -3,117 +3,123 @@ from dotenv import load_dotenv
 import os
 import time
 
+# Load environment variables
 load_dotenv()
 
+# Connect to MongoDB
 client = MongoClient(os.getenv("MONGO_SERVER"))
+db = client["US_Airbnb"]
+collection = db["accommodation"]
 
-db = client["US_Airbnb"]          
-collection = db["accommodation"]  
-
+# ✅ Indexes to optimize query performance
 collection.create_index("location.neighbourhood")
-collection.create_index("review.number_of_reviews")
+collection.create_index("minimum_nights")
+collection.create_index("price")
 collection.create_index("room_type")
+collection.create_index("review.number_of_reviews")
 collection.create_index("availability_365")
 collection.create_index("host.host_name")
-collection.create_index([("location.neighbourhood", 1), ("review.number_of_reviews", -1)])
-collection.create_index([("location.neighbourhood", 1), ("room_type", 1)])
 
+# Compound indexes for combined filtering and sorting
+collection.create_index([("location.neighbourhood", 1), ("minimum_nights", 1)])
+collection.create_index([("availability_365", -1), ("price", 1)])
+collection.create_index([("host.host_name", 1)])
 
-# 1. Most Popular Neighborhoods in the US
-def get_most_popular_neighborhoods(limit=10):
+# a. Most popular neighbourhoods grouped by min nights (filtered by price > 300)
+def get_popular_neighbourhoods_grouped_by_min_nights(min_price=300):
     start = time.time()
     result = list(collection.aggregate([
+        {"$match": {"price": {"$gt": min_price}}},
         {
             "$group": {
-                "_id": "$location.neighbourhood",
-                "total_reviews": {"$sum": "$review.number_of_reviews"}
+                "_id": {
+                    "neighbourhood": "$location.neighbourhood",
+                    "minimum_nights": "$minimum_nights"
+                },
+                "total_listings": {"$sum": 1},
+                "avg_price": {"$avg": "$price"}
             }
         },
-        {"$sort": {"total_reviews": -1}},
-        {"$limit": limit}
+        {"$sort": {"total_listings": -1}}
     ]))
     end = time.time()
-    print(f"get_most_popular_neighborhoods executed in {end - start:.4f} seconds")
+    print(f"get_popular_neighbourhoods_grouped_by_min_nights executed in {end - start:.4f} seconds")
     return result
 
-# 2. Most Booked Room Type in a Specific Neighborhood
-def get_most_booked_room_type(neighborhood):
+# b. Most booked room type (by count of listings)
+def get_most_booked_room_type():
     start = time.time()
     result = list(collection.aggregate([
-        {"$match": {"location.neighbourhood": neighborhood}},
         {
             "$group": {
                 "_id": "$room_type",
-                "total_reviews": {"$sum": "$review.number_of_reviews"}
+                "total_bookings": {"$sum": 1}
             }
         },
-        {"$sort": {"total_reviews": -1}},
-        {"$limit": 1}
+        {"$sort": {"total_bookings": -1}}
     ]))
     end = time.time()
     print(f"get_most_booked_room_type executed in {end - start:.4f} seconds")
     return result
 
-# 3. Highest and Lowest Reviewed Listings in a Specific Neighborhood
-def get_highest_reviewed_listing(neighborhood):
+# c. Highest and lowest reviewed listings overall
+def get_highest_reviewed_listing():
     start = time.time()
-    result = list(collection.find(
-        {"location.neighbourhood": neighborhood}
-    ).sort("review.number_of_reviews", -1).limit(1))
+    result = list(collection.find().sort("review.number_of_reviews", -1).limit(1))
     end = time.time()
     print(f"get_highest_reviewed_listing executed in {end - start:.4f} seconds")
     return result
 
-def get_lowest_reviewed_listing(neighborhood):
+def get_lowest_reviewed_listing():
     start = time.time()
-    result = list(collection.find(
-        {"location.neighbourhood": neighborhood},
-    ).sort("review.number_of_reviews", 1).limit(1))
+    result = list(collection.find().sort("review.number_of_reviews", 1).limit(1))
     end = time.time()
     print(f"get_lowest_reviewed_listing executed in {end - start:.4f} seconds")
     return result
 
-# 4. Available Accommodations
+# d. Available accommodations with fields and sorting
 def get_available_accommodations():
     start = time.time()
-    result = list(collection.find({"availability_365": {"$gt": 0}}))
+    result = list(collection.find(
+        {"availability_365": {"$gt": 0}},
+        {"_id": 0, "accommodation_id": 1, "name": 1, "availability_365": 1, "price": 1}
+    ).sort("availability_365", -1))
     end = time.time()
     print(f"get_available_accommodations executed in {end - start:.4f} seconds")
     return result
 
-# 5. Most Active Host
+# e. Most active hosts (based on number of listings)
 def get_most_active_host():
     start = time.time()
     result = list(collection.aggregate([
         {
             "$group": {
                 "_id": "$host.host_name",
-                "listings_count": {"$sum": 1}
+                "calculated_host_listings_count": {"$sum": 1}
             }
         },
-        {"$sort": {"listings_count": -1}},
-        {"$limit": 5}
+        {"$sort": {"calculated_host_listings_count": -1}}
     ]))
     end = time.time()
     print(f"get_most_active_host executed in {end - start:.4f} seconds")
     return result
 
+# Sample execution
 if __name__ == "__main__":
-    print("Most Popular Neighborhoods:")
-    get_most_popular_neighborhoods()
+    print("\n🔹 a. Most Popular Neighbourhoods (Grouped by Min Nights, Price > 300):")
+    print(get_popular_neighbourhoods_grouped_by_min_nights()[:5])
 
-    print("\nMost Booked Room Type in 'Western Addition':")
-    get_most_booked_room_type("Western Addition")
+    print("\n🔹 b. Most Booked Room Type:")
+    print(get_most_booked_room_type()[:5])
 
-    print("\nHighest Reviewed Listing in 'Western Addition':")
-    get_highest_reviewed_listing("Western Addition")
+    print("\n🔹 c. Highest Reviewed Listing:")
+    print(get_highest_reviewed_listing())
 
-    print("\nLowest Reviewed Listing in 'Western Addition':")
-    get_lowest_reviewed_listing("Western Addition")
+    print("\n🔹 c. Lowest Reviewed Listing:")
+    print(get_lowest_reviewed_listing())
 
-    print("\nAvailable Accommodations (top 3 shown):")
-    get_available_accommodations()[:3]
+    print("\n🔹 d. Available Accommodations (Top 3):")
+    print(get_available_accommodations()[:3])
 
-    print("\nMost Active Host:")
-    get_most_active_host()
-
+    print("\n🔹 e. Most Active Host:")
+    print(get_most_active_host()[:5])
